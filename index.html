@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#fffaf5" />
+    <title>Fika — Make time for people</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <button class="brand" data-nav="home" aria-label="Go to Fika home">
+          <span class="brand-mark">f</span><span>fika</span>
+        </button>
+        <div class="topbar-actions">
+          <button class="icon-button notification-trigger" aria-label="Notifications">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>
+            <i></i>
+          </button>
+          <button class="avatar avatar-sm" data-nav="profile" aria-label="Open profile">AM</button>
+        </div>
+      </header>
+
+      <main id="app-content">
+        <section class="screen active" id="home-screen" data-screen="home">
+          <div class="hero">
+            <div class="hero-copy">
+              <p class="eyebrow"><span class="live-dot"></span> TUESDAY, 10 AUGUST</p>
+              <h1>Good afternoon,<br /><em>Amara</em> <span class="wave">👋</span></h1>
+              <p class="hero-subtitle">Take a little break. There are good people nearby.</p>
+              <div class="hero-actions">
+                <button class="button button-dark" data-nav="create"><span>+</span> Create a Fika</button>
+                <button class="button button-ghost" data-nav="discover">Find a Fika <span class="arrow">→</span></button>
+              </div>
+            </div>
+            <div class="hero-illustration" aria-hidden="true">
+              <div class="sun"></div>
+              <div class="bubble bubble-1">☺</div>
+              <div class="bubble bubble-2">✦</div>
+              <div class="coffee-cup"><div class="coffee"></div><div class="handle"></div></div>
+              <div class="leaf leaf-1"></div><div class="leaf leaf-2"></div><div class="stem"></div>
+            </div>
+          </div>
+
+          <div class="quick-stats">
+            <div><span class="stat-icon peach">☕</span><p><strong>3</strong><small>Fikas this week</small></p></div>
+            <div><span class="stat-icon yellow">✦</span><p><strong>12</strong><small>new connections</small></p></div>
+            <div><span class="stat-icon green">⌁</span><p><strong>89%</strong><small>your connection vibe</small></p></div>
+          </div>
+
+          <div class="section-heading">
+            <div><p class="eyebrow">HAPPENING NEAR YOU</p><h2>Fikas you’ll like</h2></div>
+            <button class="text-button" data-nav="discover">See all <span>→</span></button>
+          </div>
+          <div class="fika-grid home-fikas"></div>
+
+          <div class="section-heading people-heading">
+            <div><p class="eyebrow">YOUR KIND OF PEOPLE</p><h2>Worth saying hello to</h2></div>
+            <button class="text-button" data-nav="discover">Explore people <span>→</span></button>
+          </div>
+          <div class="people-row"></div>
+        </section>
+
+        <section class="screen" id="discover-screen" data-screen="discover">
+          <div class="page-intro">
+            <div><p class="eyebrow">MAKE A LITTLE ROOM</p><h1>Find your next <em>Fika.</em></h1><p>Small gatherings, good conversations, no pressure.</p></div>
+            <button class="button button-dark desktop-create" data-nav="create"><span>+</span> Create a Fika</button>
+          </div>
+          <div class="discover-tools">
+            <label class="search-box"><svg viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.5"/><path d="m16 16 4.2 4.2"/></svg><input id="search-input" type="search" placeholder="Search Fikas, people or interests" /></label>
+            <button class="filter-button" id="filter-toggle"><svg viewBox="0 0 24 24"><path d="M4 7h16M7 12h10M10 17h4"/></svg> Filters <span id="filter-count"></span></button>
+          </div>
+          <div class="filter-panel" id="filter-panel">
+            <div><p>Activity</p><div class="chip-row" data-filter-group="type"><button class="chip selected" data-filter="all">All</button><button class="chip" data-filter="coffee">Coffee</button><button class="chip" data-filter="walk">Walk</button><button class="chip" data-filter="study">Study</button><button class="chip" data-filter="gaming">Gaming</button></div></div>
+            <div><p>When</p><div class="chip-row" data-filter-group="time"><button class="chip selected" data-filter="anytime">Any time</button><button class="chip" data-filter="today">Today</button><button class="chip" data-filter="tomorrow">Tomorrow</button><button class="chip" data-filter="weekend">Weekend</button></div></div>
+          </div>
+          <div class="discover-meta"><span id="discover-results">8 Fikas near you</span><button class="sort-button">Nearest <span>⌄</span></button></div>
+          <div class="discover-list"></div>
+        </section>
+
+        <section class="screen create-screen" id="create-screen" data-screen="create">
+          <div class="form-wrap">
+            <button class="back-button" data-nav="home"><span>←</span> Back</button>
+            <div class="form-title"><p class="eyebrow">HOST A MOMENT</p><h1>Create a <em>Fika.</em></h1><p>Bring people together around something simple.</p></div>
+            <form id="create-form">
+              <label>What should we call it?<input required id="fika-title" placeholder="e.g. Coffee & big ideas" value="" /></label>
+              <fieldset><legend>What kind of Fika?</legend><div class="activity-picker">
+                <button type="button" class="activity-option selected" data-type="coffee"><span>☕</span> Coffee</button><button type="button" class="activity-option" data-type="food"><span>🍜</span> Food</button><button type="button" class="activity-option" data-type="walk"><span>🚶</span> Walk</button><button type="button" class="activity-option" data-type="chat"><span>💬</span> Chat</button><button type="button" class="activity-option" data-type="gaming"><span>🎮</span> Gaming</button><button type="button" class="activity-option" data-type="study"><span>📚</span> Study</button></div></fieldset>
+              <label>Tell people a little about it<textarea id="fika-description" placeholder="What kind of moment are you hoping for?"></textarea></label>
+              <div class="form-grid"><label>Date<input id="fika-date" type="date" /></label><label>Time<input id="fika-time" type="time" value="17:00" /></label></div>
+              <div class="form-grid"><label>Where?<input id="fika-location" placeholder="e.g. Osu, Accra" /></label><label>Group size<select id="fika-size"><option>2 people</option><option>3 people</option><option selected>4 people</option><option>5 people</option><option>6 people</option></select></label></div>
+              <label>Interest tags<div class="chip-row interests-select"><button type="button" class="chip selected">Technology</button><button type="button" class="chip">Books</button><button type="button" class="chip">Music</button><button type="button" class="chip">Food</button><button type="button" class="chip">Creative</button></div></label>
+              <div class="safety-note"><span>♢</span><p><strong>Fika safely</strong> Meet in public places, and share only the details you’re comfortable with.</p></div>
+              <button class="button button-dark button-full" type="submit">Publish Fika <span>→</span></button>
+            </form>
+          </div>
+        </section>
+
+        <section class="screen" id="messages-screen" data-screen="messages">
+          <div class="page-intro compact"><div><p class="eyebrow">KEEP THE CONVERSATION GOING</p><h1>Your <em>rooms.</em></h1></div></div>
+          <div class="message-tabs"><button class="active">Active rooms <span>2</span></button><button>Past Fikas</button></div>
+          <div class="rooms-list"></div>
+          <div class="empty-messages"><div>✦</div><h3>More conversations await</h3><p>Join a Fika and your room will appear here.</p><button class="button button-dark" data-nav="discover">Find a Fika</button></div>
+        </section>
+
+        <section class="screen" id="profile-screen" data-screen="profile">
+          <div class="profile-cover"><div class="profile-shape one"></div><div class="profile-shape two"></div></div>
+          <div class="profile-main">
+            <button class="avatar profile-avatar">AM</button><button class="edit-profile">Edit profile <span>↗</span></button>
+            <div class="profile-name"><h1>Amara Mensah <span>✦</span></h1><p>@amara_m · Accra, Ghana</p></div>
+            <p class="profile-bio">Curious human, product designer and eternal collector of good conversations. Say hi if you love stories, new ideas or a great flat white.</p>
+            <div class="profile-stats"><div><strong>8</strong><span>Fikas hosted</span></div><div><strong>14</strong><span>Fikas joined</span></div><div><strong>24</strong><span>Connections</span></div></div>
+            <div class="profile-section"><h2>My interests</h2><div class="tag-list"><span>Product design</span><span>Books</span><span>Technology</span><span>Photography</span><span>Food</span></div></div>
+            <div class="profile-section"><h2>My Fika style</h2><div class="style-list"><div><span class="style-icon">☕</span><p><strong>Coffee dates</strong><small>Slow chats over something warm</small></p></div><div><span class="style-icon yellow">💬</span><p><strong>Good conversations</strong><small>The kind that stay with you</small></p></div><div><span class="style-icon purple">🎨</span><p><strong>Creative moments</strong><small>Making things with others</small></p></div></div></div>
+          </div>
+        </section>
+
+        <section class="screen detail-screen" id="detail-screen" data-screen="detail">
+          <button class="back-button detail-back" data-nav="discover"><span>←</span> Discover</button>
+          <div class="detail-hero"><div class="detail-pattern"><span>☕</span></div><div class="detail-title"><p class="eyebrow">COFFEE · TODAY</p><h1 id="detail-title">Coffee & conversation</h1><p id="detail-time">Today · 4:00 PM · 1 hour</p></div></div>
+          <div class="detail-content">
+            <div class="detail-primary"><div class="host-block"><button class="avatar avatar-lg" id="host-avatar">K</button><div><p class="eyebrow">HOSTED BY</p><h3 id="host-name">Kojo A.</h3><p>Product builder · Coffee enthusiast</p></div><button class="text-button">View profile <span>→</span></button></div>
+            <div class="detail-section"><h2>About this Fika</h2><p id="detail-description">A relaxed afternoon coffee for people who enjoy discussing ideas, building things and meeting thoughtful new faces.</p><div class="tag-list" id="detail-tags"><span>Technology</span><span>Conversation</span><span>Startups</span></div></div>
+            <div class="detail-section detail-location"><span>⌖</span><div><h3 id="detail-location">Café Mondo, Osu</h3><p>Exact location shared after joining</p></div><button>View map ↗</button></div>
+            <div class="detail-section"><div class="participants-heading"><div><h2>Who’s going</h2><p id="participant-count">3 of 5 people</p></div><div class="stacked-avatars"><span class="avatar-stack peach">K</span><span class="avatar-stack purple">E</span><span class="avatar-stack green">J</span></div></div><div class="shared-interest"><span>✦</span><p><strong>3 things in common</strong><small>You all enjoy technology, coffee and great conversations.</small></p></div></div></div>
+            <aside class="join-card"><div><span class="pill" id="detail-type">☕ Coffee</span><p><strong id="detail-spots">2 spots left</strong><small>Join this Fika</small></p></div><button class="button button-dark button-full" id="join-button">Join Fika <span>→</span></button><p class="join-note">You can leave anytime. No awkwardness.</p></aside>
+          </div>
+        </section>
+
+        <section class="screen room-screen" id="room-screen" data-screen="room">
+          <div class="room-header"><button class="back-button" data-nav="messages"><span>←</span> Rooms</button><div><p class="eyebrow">TODAY · 4:00 PM</p><h2>Coffee & conversation</h2><p>3 people · Café Mondo, Osu</p></div><button class="room-info">i</button></div>
+          <div class="room-layout"><div class="chat-area"><div class="room-status"><span class="live-dot"></span> Fika starts in 1 hour 12 min</div><div class="chat-messages"><div class="chat-message other"><span class="avatar avatar-chat peach">K</span><div><strong>Kojo</strong><p>Hey everyone! Excited to meet you all later ☕</p><small>3:12 PM</small></div></div><div class="chat-message other"><span class="avatar avatar-chat purple">E</span><div><strong>Esi</strong><p>Same here! I’ve heard the pastries at Mondo are incredible.</p><small>3:14 PM</small></div></div><div class="chat-message mine"><div><p>Looking forward to it — I’m voting for the almond croissant.</p><small>3:18 PM</small></div></div></div><form class="chat-compose"><button type="button">+</button><input id="chat-input" placeholder="Say something kind..." /><button class="send-button" aria-label="Send message">↑</button></form></div><aside class="starter-card"><div class="starter-icon">✦</div><p class="eyebrow">NEED A STARTER?</p><h3>What’s something you’ve changed your mind about recently?</h3><button id="new-starter">Give me another <span>→</span></button><div class="room-people"><p>IN THIS FIKA</p><div><span class="avatar-stack peach">K</span><span class="avatar-stack purple">E</span><span class="avatar-stack green">J</span><span>+ you</span></div></div></aside></div>
+        </section>
+      </main>
+
+      <nav class="bottom-nav" aria-label="Main navigation">
+        <button class="nav-item active" data-nav="home"><svg viewBox="0 0 24 24"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg><span>Home</span></button>
+        <button class="nav-item" data-nav="discover"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></svg><span>Discover</span></button>
+        <button class="nav-create" data-nav="create" aria-label="Create a Fika">+</button>
+        <button class="nav-item" data-nav="messages"><svg viewBox="0 0 24 24"><path d="M20 11.5a7.5 7.5 0 0 1-8 7.48A7.7 7.7 0 0 1 8.7 18L4 20l1.45-4.13A7.43 7.43 0 0 1 4.5 12 7.5 7.5 0 0 1 12 4.5c4.42 0 8 3.13 8 7Z"/></svg><span>Messages</span><i></i></button>
+        <button class="nav-item" data-nav="profile"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 21a7 7 0 0 1 14 0"/></svg><span>Profile</span></button>
+      </nav>
+    </div>
+
+    <div class="modal-backdrop" id="modal-backdrop">
+      <div class="join-modal" id="join-modal"><button class="modal-close" aria-label="Close">×</button><div class="success-orb">✦</div><p class="eyebrow">YOU’RE IN</p><h2>See you at Fika! <span>🎉</span></h2><p>You’re joining <strong id="joined-fika-title">Coffee & conversation</strong> today at 4:00 PM.</p><div class="modal-reminder"><span>☕</span><p><strong>We’ll remind you</strong><small>30 minutes before you meet.</small></p></div><button class="button button-dark button-full" id="open-room">Open Fika room <span>→</span></button><button class="modal-secondary modal-close">Maybe later</button></div>
+      <aside class="notification-popover" id="notification-popover"><div class="popover-heading"><h3>Notifications</h3><button>Mark all read</button></div><div class="notice unread"><span>☕</span><p><strong>Fika reminder</strong><small>Coffee & conversation starts in 1 hour.</small></p><i></i></div><div class="notice"><span>✦</span><p><strong>Esi joined your Fika</strong><small>Creative coffee walk · 18 min ago</small></p></div><div class="notice"><span>💬</span><p><strong>New message from Kojo</strong><small>“Hey everyone! Excited to meet...”</small></p></div></aside>
+    </div>
+    <script src="app.js"></script>
+  </body>
+</html>

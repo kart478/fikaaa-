@@ -1,0 +1,233 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum FikaType {
+  COFFEE
+  FOOD
+  WALK
+  CONVERSATION
+  GAMING
+  STUDY
+  NETWORKING
+  CREATIVE
+  SPORTS
+  MUSIC
+}
+
+enum FikaStatus {
+  OPEN
+  FULL
+  STARTING
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum ParticipantStatus {
+  JOINED
+  LEFT
+  CANCELLED
+  ATTENDED
+}
+
+enum NotificationType {
+  FIKA_JOINED
+  FIKA_LEFT
+  NEW_MESSAGE
+  FIKA_REMINDER
+  FIKA_CANCELLED
+  FIKA_INVITATION
+}
+
+model User {
+  id              String                   @id @default(cuid())
+  name            String
+  username        String                   @unique
+  email           String                   @unique
+  passwordHash    String
+  profileImage    String?
+  bio             String?                  @db.VarChar(500)
+  location        String?                  @db.VarChar(120)
+  latitude        Decimal?                 @db.Decimal(9, 6)
+  longitude       Decimal?                 @db.Decimal(9, 6)
+  createdAt       DateTime                 @default(now())
+  updatedAt       DateTime                 @updatedAt
+  interests       UserInterest[]
+  preferences     UserActivityPreference[] 
+  hostedFikas     Fika[]                   @relation("HostedFikas")
+  participations  FikaParticipant[]
+  sentMessages    Message[]
+  notifications   Notification[]
+  ratingsGiven    Rating[]                  @relation("RatingsGiven")
+  ratingsReceived Rating[]                  @relation("RatingsReceived")
+  reportsMade     Report[]                  @relation("ReportsMade")
+  reportsReceived Report[]                  @relation("ReportsReceived")
+  blocksCreated   Block[]                   @relation("Blocker")
+  blocksReceived  Block[]                   @relation("Blocked")
+
+  @@index([location])
+}
+
+model Interest {
+  id        String         @id @default(cuid())
+  name      String         @unique
+  createdAt DateTime       @default(now())
+  users     UserInterest[]
+  fikas     FikaInterest[]
+}
+
+model UserInterest {
+  userId     String
+  interestId String
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  interest   Interest @relation(fields: [interestId], references: [id], onDelete: Cascade)
+
+  @@id([userId, interestId])
+  @@index([interestId])
+}
+
+model UserActivityPreference {
+  id        String   @id @default(cuid())
+  userId    String
+  type      FikaType
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type])
+}
+
+model Fika {
+  id              String            @id @default(cuid())
+  hostId          String
+  title           String            @db.VarChar(140)
+  description     String            @db.VarChar(1200)
+  type            FikaType
+  date            DateTime          @db.Date
+  startTime       String            @db.VarChar(5)
+  duration        Int
+  locationName    String            @db.VarChar(180)
+  latitude        Decimal?          @db.Decimal(9, 6)
+  longitude       Decimal?          @db.Decimal(9, 6)
+  maxParticipants Int
+  status          FikaStatus        @default(OPEN)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  host            User              @relation("HostedFikas", fields: [hostId], references: [id], onDelete: Restrict)
+  participants    FikaParticipant[]
+  interests       FikaInterest[]
+  messages        Message[]
+  ratings         Rating[]
+  reports         Report[]
+
+  @@index([status, date])
+  @@index([type, status])
+  @@index([hostId])
+}
+
+model FikaInterest {
+  fikaId     String
+  interestId String
+  createdAt  DateTime @default(now())
+  fika       Fika     @relation(fields: [fikaId], references: [id], onDelete: Cascade)
+  interest   Interest @relation(fields: [interestId], references: [id], onDelete: Cascade)
+
+  @@id([fikaId, interestId])
+  @@index([interestId])
+}
+
+model FikaParticipant {
+  id        String            @id @default(cuid())
+  fikaId    String
+  userId    String
+  status    ParticipantStatus @default(JOINED)
+  joinedAt  DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  fika      Fika              @relation(fields: [fikaId], references: [id], onDelete: Cascade)
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([fikaId, userId])
+  @@index([userId, status])
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  fikaId    String
+  senderId  String
+  content   String   @db.VarChar(1000)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  fika      Fika     @relation(fields: [fikaId], references: [id], onDelete: Cascade)
+  sender    User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([fikaId, createdAt])
+}
+
+model ConversationStarter {
+  id        String   @id @default(cuid())
+  prompt    String   @unique @db.VarChar(500)
+  createdAt DateTime @default(now())
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String           @db.VarChar(160)
+  message   String           @db.VarChar(500)
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead, createdAt])
+}
+
+model Rating {
+  id             String   @id @default(cuid())
+  fikaId         String
+  reviewerId     String
+  reviewedUserId String
+  rating         Int
+  feedback       String?  @db.VarChar(800)
+  createdAt      DateTime @default(now())
+  fika           Fika     @relation(fields: [fikaId], references: [id], onDelete: Cascade)
+  reviewer       User     @relation("RatingsGiven", fields: [reviewerId], references: [id], onDelete: Cascade)
+  reviewedUser   User     @relation("RatingsReceived", fields: [reviewedUserId], references: [id], onDelete: Cascade)
+
+  @@unique([fikaId, reviewerId, reviewedUserId])
+  @@index([reviewedUserId])
+}
+
+model Report {
+  id             String   @id @default(cuid())
+  reporterId     String
+  reportedUserId String?
+  fikaId         String?
+  reason         String   @db.VarChar(120)
+  description    String?  @db.VarChar(1000)
+  createdAt      DateTime @default(now())
+  reporter       User     @relation("ReportsMade", fields: [reporterId], references: [id], onDelete: Cascade)
+  reportedUser   User?    @relation("ReportsReceived", fields: [reportedUserId], references: [id], onDelete: SetNull)
+  fika           Fika?    @relation(fields: [fikaId], references: [id], onDelete: SetNull)
+
+  @@index([fikaId])
+  @@index([reportedUserId])
+}
+
+model Block {
+  id            String   @id @default(cuid())
+  blockerId     String
+  blockedUserId String
+  createdAt     DateTime @default(now())
+  blocker       User     @relation("Blocker", fields: [blockerId], references: [id], onDelete: Cascade)
+  blocked       User     @relation("Blocked", fields: [blockedUserId], references: [id], onDelete: Cascade)
+
+  @@unique([blockerId, blockedUserId])
+  @@index([blockedUserId])
+}
