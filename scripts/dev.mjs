@@ -1,14 +1,27 @@
 import http from 'node:http';
 import { existsSync, readFileSync, statSync } from 'node:fs';
-import { dirname, extname, join, normalize, resolve } from 'node:path';
+import { dirname, extname, normalize, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawn } from 'node:child_process';
+import net from 'node:net';
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const frontendPort = 5173;
+const backendPort = 4000;
 const backendCommand = process.platform === 'win32' ? 'cmd.exe' : 'npm';
 const backendArgs = process.platform === 'win32' ? ['/d', '/s', '/c', 'npm --prefix fika-backend run dev'] : ['--prefix', 'fika-backend', 'run', 'dev'];
-const backend = spawn(backendCommand, backendArgs, { cwd: projectRoot, stdio: 'inherit' });
+
+function isPortOpen(port) {
+  return new Promise(resolvePort => {
+    const socket = net.createConnection({ port, host: '127.0.0.1' });
+    socket.once('connect', () => { socket.destroy(); resolvePort(true); });
+    socket.once('error', () => resolvePort(false));
+  });
+}
+
+const backendAlreadyRunning = await isPortOpen(backendPort);
+const backend = backendAlreadyRunning ? undefined : spawn(backendCommand, backendArgs, { cwd: projectRoot, stdio: 'inherit' });
+if (backendAlreadyRunning) console.log(`Fika backend is already running on http://localhost:${backendPort}`);
 
 const contentTypes = {
   '.css': 'text/css; charset=utf-8',
@@ -40,14 +53,21 @@ const frontend = http.createServer((request, response) => {
 frontend.listen(frontendPort, () => {
   console.log(`Fika frontend listening on http://localhost:${frontendPort}`);
 });
+frontend.on('error', error => {
+  if (error.code === 'EADDRINUSE') {
+    console.log(`Fika frontend is already running on http://localhost:${frontendPort}`);
+    return;
+  }
+  throw error;
+});
 
 function shutdown() {
   frontend.close();
-  backend.kill();
+  backend?.kill();
 }
 
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);
-backend.on('exit', code => {
+backend?.on('exit', code => {
   if (code && code !== 0) console.error(`Backend exited with code ${code}`);
 });
