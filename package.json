@@ -2,7 +2,7 @@
   "name": "fika",
   "private": true,
   "scripts": {
-    "dev": "npm --prefix fika-backend run dev",
+    "dev": "node scripts/dev.mjs",
     "backend:dev": "npm --prefix fika-backend run dev",
     "backend:build": "npm --prefix fika-backend run build",
     "test": "npm --prefix fika-backend test"
