@@ -47,9 +47,9 @@
           </div>
 
           <div class="quick-stats">
-            <div><span class="stat-icon peach">☕</span><p><strong>3</strong><small>Fikas this week</small></p></div>
-            <div><span class="stat-icon yellow">✦</span><p><strong>12</strong><small>new connections</small></p></div>
-            <div><span class="stat-icon green">⌁</span><p><strong>89%</strong><small>your connection vibe</small></p></div>
+            <div><span class="stat-icon peach">☕</span><p><strong id="week-fika-count">0</strong><small>Fikas this week</small></p></div>
+            <div><span class="stat-icon yellow">✦</span><p><strong id="new-connection-count">0</strong><small>new connections</small></p></div>
+            <div><span class="stat-icon green">⌁</span><p><strong id="connection-vibe">—</strong><small>your connection vibe</small></p></div>
           </div>
 
           <div class="section-heading">
@@ -113,8 +113,8 @@
             <button class="avatar profile-avatar" id="profile-avatar">?</button><button class="edit-profile" id="auth-action">Sign in <span>↗</span></button>
             <div class="profile-name"><h1 id="profile-name">Your profile <span>✦</span></h1><p id="profile-handle">Sign in to personalize your Fika space</p></div>
             <p class="profile-bio" id="profile-bio">Meet thoughtful people around simple, real-world moments.</p>
-            <div class="profile-stats"><div><strong>8</strong><span>Fikas hosted</span></div><div><strong>14</strong><span>Fikas joined</span></div><div><strong>24</strong><span>Connections</span></div></div>
-            <div class="profile-section"><h2>My interests</h2><div class="tag-list"><span>Product design</span><span>Books</span><span>Technology</span><span>Photography</span><span>Food</span></div></div>
+            <div class="profile-stats"><div><strong id="hosted-count">0</strong><span>Fikas hosted</span></div><div><strong id="joined-count">0</strong><span>Fikas joined</span></div><div><strong id="connection-count">0</strong><span>Connections</span></div></div>
+            <div class="profile-section"><h2>My interests</h2><div class="tag-list" id="profile-interests"><span>Sign in to add interests</span></div></div>
             <div class="profile-section"><h2>My Fika style</h2><div class="style-list"><div><span class="style-icon">☕</span><p><strong>Coffee dates</strong><small>Slow chats over something warm</small></p></div><div><span class="style-icon yellow">💬</span><p><strong>Good conversations</strong><small>The kind that stay with you</small></p></div><div><span class="style-icon purple">🎨</span><p><strong>Creative moments</strong><small>Making things with others</small></p></div></div></div>
           </div>
         </section>
@@ -132,8 +132,8 @@
         </section>
 
         <section class="screen room-screen" id="room-screen" data-screen="room">
-          <div class="room-header"><button class="back-button" data-nav="messages"><span>←</span> Rooms</button><div><p class="eyebrow">TODAY · 4:00 PM</p><h2>Coffee & conversation</h2><p>3 people · Café Mondo, Osu</p></div><button class="room-info">i</button></div>
-          <div class="room-layout"><div class="chat-area"><div class="room-status"><span class="live-dot"></span> Fika starts in 1 hour 12 min</div><div class="chat-messages"><div class="chat-message other"><span class="avatar avatar-chat peach">K</span><div><strong>Kojo</strong><p>Hey everyone! Excited to meet you all later ☕</p><small>3:12 PM</small></div></div><div class="chat-message other"><span class="avatar avatar-chat purple">E</span><div><strong>Esi</strong><p>Same here! I’ve heard the pastries at Mondo are incredible.</p><small>3:14 PM</small></div></div><div class="chat-message mine"><div><p>Looking forward to it — I’m voting for the almond croissant.</p><small>3:18 PM</small></div></div></div><form class="chat-compose"><button type="button">+</button><input id="chat-input" placeholder="Say something kind..." /><button class="send-button" aria-label="Send message">↑</button></form></div><aside class="starter-card"><div class="starter-icon">✦</div><p class="eyebrow">NEED A STARTER?</p><h3>What’s something you’ve changed your mind about recently?</h3><button id="new-starter">Give me another <span>→</span></button><div class="room-people"><p>IN THIS FIKA</p><div><span class="avatar-stack peach">K</span><span class="avatar-stack purple">E</span><span class="avatar-stack green">J</span><span>+ you</span></div></div></aside></div>
+          <div class="room-header"><button class="back-button" data-nav="messages"><span>←</span> Rooms</button><div><p class="eyebrow" id="room-time">FIKA ROOM</p><h2 id="room-title">Select a Fika</h2><p id="room-details">Join a Fika to open its room.</p></div><button class="room-info">i</button></div>
+          <div class="room-layout"><div class="chat-area"><div class="room-status"><span class="live-dot"></span> Fika room</div><div class="chat-messages" id="chat-messages"><p class="empty-messages">Join a Fika to start chatting.</p></div><form class="chat-compose"><button type="button">+</button><input id="chat-input" placeholder="Say something kind..." /><button class="send-button" aria-label="Send message">↑</button></form></div><aside class="starter-card"><div class="starter-icon">✦</div><p class="eyebrow">NEED A STARTER?</p><h3>Loading a conversation starter...</h3><button id="new-starter">Give me another <span>→</span></button><div class="room-people"><p>IN THIS FIKA</p><div id="room-people-list"></div></div></aside></div>
         </section>
       </main>
 
@@ -149,8 +149,9 @@
     <div class="modal-backdrop" id="modal-backdrop">
       <div class="join-modal" id="join-modal"><button class="modal-close" aria-label="Close">×</button><div class="success-orb">✦</div><p class="eyebrow">YOU’RE IN</p><h2>See you at Fika! <span>🎉</span></h2><p>You’re joining <strong id="joined-fika-title">Coffee & conversation</strong> today at 4:00 PM.</p><div class="modal-reminder"><span>☕</span><p><strong>We’ll remind you</strong><small>30 minutes before you meet.</small></p></div><button class="button button-dark button-full" id="open-room">Open Fika room <span>→</span></button><button class="modal-secondary modal-close">Maybe later</button></div>
       <div class="auth-modal" id="auth-modal"><button class="modal-close" aria-label="Close">×</button><p class="eyebrow" id="auth-eyebrow">WELCOME BACK</p><h2 id="auth-title">Sign in to Fika</h2><p id="auth-subtitle">Keep your plans and connections in one place.</p><form id="auth-form"><label class="auth-name-field">Name<input id="auth-name" autocomplete="name" /></label><label class="auth-username-field">Username<input id="auth-username" autocomplete="username" /></label><label>Email<input id="auth-email" type="email" autocomplete="email" required /></label><label>Password<input id="auth-password" type="password" minlength="8" autocomplete="current-password" required /></label><p class="auth-error" id="auth-error"></p><button class="button button-dark button-full" id="auth-submit" type="submit">Sign in <span>→</span></button></form><button class="modal-secondary" id="auth-switch" type="button">Create an account</button></div>
-      <aside class="notification-popover" id="notification-popover"><div class="popover-heading"><h3>Notifications</h3><button>Mark all read</button></div><div class="notice unread"><span>☕</span><p><strong>Fika reminder</strong><small>Coffee & conversation starts in 1 hour.</small></p><i></i></div><div class="notice"><span>✦</span><p><strong>Esi joined your Fika</strong><small>Creative coffee walk · 18 min ago</small></p></div><div class="notice"><span>💬</span><p><strong>New message from Kojo</strong><small>“Hey everyone! Excited to meet...”</small></p></div></aside>
+      <aside class="notification-popover" id="notification-popover"><div class="popover-heading"><h3>Notifications</h3><button id="mark-notifications-read">Mark all read</button></div><div id="notifications-list"><p class="notice-empty">Sign in to see notifications.</p></div></aside>
     </div>
+    <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
     <script src="app.js"></script>
   </body>
 </html>

@@ -5,6 +5,8 @@ let interests = [];
 let conversationStarter;
 let currentUser;
 let authMode = "login";
+let roomSocket;
+let roomMessages = [];
 let selectedType = "coffee";
 let activeFilters = { type: "all", time: "anytime" };
 
@@ -28,11 +30,56 @@ function updateAuthUi() {
   $("#profile-handle").textContent = currentUser ? `@${currentUser.username}${currentUser.location ? ` · ${currentUser.location}` : ""}` : "Sign in to personalize your Fika space";
   $("#profile-bio").textContent = currentUser?.bio || "Meet thoughtful people around simple, real-world moments.";
   $("#auth-action").innerHTML = currentUser ? "Sign out <span>↗</span>" : "Sign in <span>↗</span>";
+  $("#profile-interests").innerHTML = currentUser?.interests?.length ? currentUser.interests.map(item => `<span>${item.interest.name}</span>`).join("") : "<span>Sign in to add interests</span>";
 }
 
 async function loadSession() {
   try { currentUser = await apiRequest("/auth/me"); } catch (_error) { currentUser = undefined; }
   updateAuthUi();
+  if (currentUser) {
+    loadProfileData();
+    loadNotifications();
+  }
+}
+
+async function loadProfileData() {
+  try {
+    const [upcoming, past] = await Promise.all([apiRequest("/users/me/fikas/upcoming"), apiRequest("/users/me/fikas/past")]);
+    const hosted = [...upcoming, ...past].filter(item => item.fika.hostId === currentUser.id || item.fika.host?.id === currentUser.id).length;
+    $("#hosted-count").textContent = hosted;
+    $("#joined-count").textContent = upcoming.length + past.length;
+    $("#connection-count").textContent = new Set([...upcoming, ...past].flatMap(item => item.fika.participants || []).map(participant => participant.userId)).size;
+    $("#week-fika-count").textContent = upcoming.length;
+    $("#new-connection-count").textContent = $("#connection-count").textContent;
+    $("#connection-vibe").textContent = currentUser ? "Ready" : "—";
+  } catch (_error) {
+    $("#hosted-count").textContent = "0";
+    $("#joined-count").textContent = "0";
+    $("#connection-count").textContent = "0";
+    $("#week-fika-count").textContent = "0";
+    $("#new-connection-count").textContent = "0";
+    $("#connection-vibe").textContent = "—";
+  }
+}
+
+const notificationIcons = { FIKA_JOINED: "☕", FIKA_LEFT: "↩", NEW_MESSAGE: "💬", FIKA_REMINDER: "⏰", FIKA_CANCELLED: "×", FIKA_INVITATION: "✦" };
+
+function renderNotifications(notifications) {
+  $("#notifications-list").innerHTML = notifications.length ? notifications.map(notification => `<button class="notice ${notification.isRead ? "" : "unread"}" data-notification-id="${notification.id}"><span>${notificationIcons[notification.type] || "✦"}</span><p><strong>${notification.title}</strong><small>${notification.message}</small></p>${notification.isRead ? "" : "<i></i>"}</button>`).join("") : "<p class=\"notice-empty\">No notifications yet.</p>";
+}
+
+async function loadNotifications() {
+  if (!currentUser) return;
+  try { renderNotifications(await apiRequest("/notifications")); } catch (_error) { renderNotifications([]); }
+}
+
+async function markNotificationsRead() {
+  if (!currentUser) return;
+  try { await apiRequest("/notifications/read-all", { method: "PUT" }); await loadNotifications(); } catch (error) { alert(error.message); }
+}
+
+async function markNotificationRead(notificationId) {
+  try { await apiRequest(`/notifications/${notificationId}/read`, { method: "PUT" }); await loadNotifications(); } catch (error) { alert(error.message); }
 }
 
 function setAuthMode(mode) {
@@ -173,6 +220,8 @@ function showScreen(screen) {
   $("#notification-popover").classList.remove("show");
   $("#modal-backdrop").classList.remove("show");
   window.scrollTo({ top: 0, behavior: "smooth" });
+  if (screen === "profile" && currentUser) loadProfileData();
+  if (screen === "room") loadRoomMessages();
 }
 
 function updateDetail(fika) {
@@ -188,6 +237,9 @@ function updateDetail(fika) {
   $("#detail-spots").textContent = `${fika.max - fika.attendees} spot${fika.max - fika.attendees === 1 ? "" : "s"} left`;
   $("#detail-tags").innerHTML = makeTags(fika.tags);
   $("#joined-fika-title").textContent = fika.title;
+  $("#room-time").textContent = fika.time;
+  $("#room-title").textContent = fika.title;
+  $("#room-details").textContent = `${fika.attendees} people · ${fika.location}`;
   const detailHero = $(".detail-hero");
   detailHero.style.background = fika.art === "green" ? "#cfddc0" : fika.art === "yellow" ? "#f7d982" : fika.art === "lavender" ? "#ded8ef" : "#f3d5bf";
   $(".detail-pattern span").textContent = fika.icon;
@@ -229,6 +281,36 @@ function addChatMessage(message) {
   $(".chat-messages").scrollTop = $(".chat-messages").scrollHeight;
 }
 
+function renderMessages(messages) {
+  $("#chat-messages").innerHTML = messages.length ? messages.map(message => {
+    const mine = message.senderId === currentUser?.id;
+    const time = new Date(message.createdAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+    return `<div class="chat-message ${mine ? "mine" : "other"}">${mine ? "" : `<span class="avatar avatar-chat peach">${message.sender?.name?.charAt(0) || "F"}</span>`}<div>${mine ? "" : `<strong>${message.sender?.name || "Fika member"}</strong>`}<p>${message.content.replace(/</g, "&lt;")}</p><small>${time}</small></div></div>`;
+  }).join("") : "<p class=\"empty-messages\">No messages yet. Start the conversation.</p>";
+  $("#chat-messages").scrollTop = $("#chat-messages").scrollHeight;
+}
+
+async function loadRoomMessages() {
+  if (!currentUser || !currentFika) return;
+  try {
+    const result = await apiRequest(`/fikas/${currentFika.id}/messages?page=1&limit=100`);
+    roomMessages = result.items;
+    renderMessages(roomMessages);
+    if (roomSocket) roomSocket.disconnect();
+    if (!window.io) return;
+    roomSocket = window.io("http://localhost:4000", { withCredentials: true });
+    roomSocket.on("connect", () => roomSocket.emit("join_fika_room", { fikaId: currentFika.id }));
+    roomSocket.on("new_message", message => { if (message.fikaId === currentFika.id) { roomMessages = [...roomMessages, message]; renderMessages(roomMessages); } });
+  } catch (error) {
+    $("#chat-messages").innerHTML = `<p class="empty-messages">${error.message}</p>`;
+  }
+}
+
+function sendChatMessage(content) {
+  if (!roomSocket?.connected || !currentFika) return alert("Join a Fika before sending messages.");
+  roomSocket.emit("send_message", { fikaId: currentFika.id, content });
+}
+
 document.addEventListener("click", event => {
   if (event.target.closest("#auth-button, #auth-action")) {
     if (currentUser && event.target.closest("#auth-action")) {
@@ -249,8 +331,13 @@ document.addEventListener("click", event => {
 
   if (event.target.closest(".notification-trigger")) {
     $("#notification-popover").classList.toggle("show");
+    loadNotifications();
     return;
   }
+
+  const notification = event.target.closest("[data-notification-id]");
+  if (notification) { markNotificationRead(notification.dataset.notificationId); return; }
+  if (event.target.closest("#mark-notifications-read")) { markNotificationsRead(); return; }
 
   if (event.target.closest("#filter-toggle")) {
     $("#filter-panel").classList.toggle("show");
@@ -316,7 +403,7 @@ $("#create-form").addEventListener("submit", async event => {
 $(".chat-compose").addEventListener("submit", event => {
   event.preventDefault();
   const input = $("#chat-input");
-  addChatMessage(input.value);
+  sendChatMessage(input.value.trim());
   input.value = "";
 });
 
