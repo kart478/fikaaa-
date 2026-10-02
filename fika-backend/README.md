@@ -12,14 +12,14 @@ The backend for **Fika**, a social-connection product built around small, real-w
 
 ## Setup
 
-1. Copy `.env.example` to `.env` and set a PostgreSQL `DATABASE_URL` plus a random `SESSION_SECRET` of at least 32 characters.
+1. Create a Supabase project and copy `.env.example` to `.env`. Set `DATABASE_URL` to Supabase's pooled connection string, `DIRECT_URL` to its direct connection string, and a random `SESSION_SECRET` of at least 32 characters. The pooled URL is used by the API; the direct URL is used by Prisma migrations.
 2. Install dependencies: `npm install`
 3. Generate Prisma Client: `npm run prisma:generate`
 4. Apply the migration: `npm run prisma:migrate`
 5. Seed interests and conversation starters: `npm run prisma:seed`
 6. Start the API: `npm run dev`
 
-The default API URL is `http://localhost:4000`. `GET /health` confirms that the HTTP process is up. The application must be connected to PostgreSQL before `npm run dev` can start.
+The default API URL is `http://localhost:4000`. `GET /health` confirms that the HTTP process is up. The application must be connected to Supabase before `npm run dev` can start.
 
 ## Commands
 

@@ -1,17 +1,131 @@
-const fikas = [
-  { id: 1, title: "Coffee & conversation", host: "Kojo A.", initials: "K", type: "coffee", icon: "☕", time: "Today · 4:00 PM", location: "Café Mondo, Osu", distance: "2.1 km", attendees: 3, max: 5, tags: ["Technology", "Conversation", "Startups"], art: "peach", description: "A relaxed afternoon coffee for people who enjoy discussing ideas, building things and meeting thoughtful new faces." },
-  { id: 2, title: "A walk with no agenda", host: "Esi O.", initials: "E", type: "walk", icon: "🚶", time: "Today · 5:30 PM", location: "Legon Botanical Gardens", distance: "3.8 km", attendees: 2, max: 4, tags: ["Walk", "Books", "Life"], art: "green", description: "Let’s take a gentle walk, enjoy the late-afternoon air and see where the conversation takes us." },
-  { id: 3, title: "The bookish brunch club", host: "Jemima K.", initials: "J", type: "food", icon: "🥐", time: "Tomorrow · 11:00 AM", location: "Bistro 22, Cantonments", distance: "4.2 km", attendees: 4, max: 6, tags: ["Books", "Food", "Stories"], art: "yellow", description: "Bring the book you can’t stop talking about and meet a few other curious readers over brunch." },
-  { id: 4, title: "Build & brainstorm", host: "Nana B.", initials: "N", type: "study", icon: "💻", time: "Tomorrow · 3:00 PM", location: "Impact Hub, Osu", distance: "1.6 km", attendees: 2, max: 4, tags: ["Technology", "Design", "Work"], art: "lavender", description: "A friendly co-working Fika for builders with a small idea, a side project or just an open notebook." },
-  { id: 5, title: "Level up together", host: "Kwesi M.", initials: "K", type: "gaming", icon: "🎮", time: "Saturday · 2:00 PM", location: "Game Lounge, East Legon", distance: "5.4 km", attendees: 3, max: 5, tags: ["Gaming", "Music", "Fun"], art: "green", description: "Casual multiplayer games and lovely company. Beginners and button-mashers both very welcome." },
-  { id: 6, title: "Sketch, sip, repeat", host: "Ada A.", initials: "A", type: "creative", icon: "🎨", time: "Saturday · 4:00 PM", location: "Untamed Empire, Osu", distance: "2.7 km", attendees: 1, max: 4, tags: ["Art", "Creative", "Coffee"], art: "peach", description: "A low-key creative afternoon. Bring a sketchbook, your favourite pens, or simply an open mind." },
-  { id: 7, title: "Real talk for founders", host: "Michael T.", initials: "M", type: "chat", icon: "💬", time: "Sunday · 3:30 PM", location: "Theia House, Airport", distance: "4.8 km", attendees: 4, max: 6, tags: ["Business", "Startups", "Career"], art: "yellow", description: "An honest, easy-going chat about making things happen, navigating uncertainty and staying human while doing it." },
-  { id: 8, title: "Sunday study session", host: "Yaa D.", initials: "Y", type: "study", icon: "📚", time: "Sunday · 1:00 PM", location: "Balme Library, Legon", distance: "5.2 km", attendees: 3, max: 6, tags: ["Study", "Education", "Career"], art: "lavender", description: "Set a gentle goal, find your focus, and reward yourself with a conversation break midway through." }
-];
-
-let currentFika = fikas[0];
+const API_BASE_URL = "http://localhost:4000/api";
+let fikas = [];
+let currentFika;
+let interests = [];
+let conversationStarter;
+let currentUser;
+let authMode = "login";
 let selectedType = "coffee";
 let activeFilters = { type: "all", time: "anytime" };
+
+const typeIcons = { coffee: "☕", food: "🍜", walk: "🚶", conversation: "💬", chat: "💬", gaming: "🎮", study: "📚", networking: "🤝", creative: "🎨", sports: "⚽", music: "🎵" };
+const typeArt = { coffee: "peach", food: "yellow", walk: "green", conversation: "lavender", chat: "lavender", gaming: "green", study: "lavender", networking: "yellow", creative: "peach", sports: "green", music: "yellow" };
+
+async function apiRequest(path, options = {}) {
+  const response = await fetch(`${API_BASE_URL}${path}`, { credentials: "include", ...options, headers: { "Content-Type": "application/json", ...(options.headers || {}) } });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(payload.message || "The API request failed.");
+  return payload.data;
+}
+
+function updateAuthUi() {
+  const name = currentUser?.name || "there";
+  const initials = currentUser ? currentUser.name.split(" ").map(part => part[0]).join("").slice(0, 2).toUpperCase() : "?";
+  $("#auth-button").textContent = initials;
+  $("#hero-name").textContent = name.split(" ")[0];
+  $("#profile-avatar").textContent = initials;
+  $("#profile-name").innerHTML = currentUser ? `${currentUser.name} <span>✦</span>` : "Your profile <span>✦</span>";
+  $("#profile-handle").textContent = currentUser ? `@${currentUser.username}${currentUser.location ? ` · ${currentUser.location}` : ""}` : "Sign in to personalize your Fika space";
+  $("#profile-bio").textContent = currentUser?.bio || "Meet thoughtful people around simple, real-world moments.";
+  $("#auth-action").innerHTML = currentUser ? "Sign out <span>↗</span>" : "Sign in <span>↗</span>";
+}
+
+async function loadSession() {
+  try { currentUser = await apiRequest("/auth/me"); } catch (_error) { currentUser = undefined; }
+  updateAuthUi();
+}
+
+function setAuthMode(mode) {
+  authMode = mode;
+  const isRegistering = mode === "register";
+  $("#auth-modal").classList.toggle("register-mode", isRegistering);
+  $("#auth-eyebrow").textContent = isRegistering ? "MAKE ROOM FOR PEOPLE" : "WELCOME BACK";
+  $("#auth-title").textContent = isRegistering ? "Create your Fika account" : "Sign in to Fika";
+  $("#auth-subtitle").textContent = isRegistering ? "A few details, then you can start making plans." : "Keep your plans and connections in one place.";
+  $("#auth-submit").innerHTML = isRegistering ? "Create account <span>→</span>" : "Sign in <span>→</span>";
+  $("#auth-switch").textContent = isRegistering ? "Already have an account? Sign in" : "Create an account";
+  $("#auth-password").autocomplete = isRegistering ? "new-password" : "current-password";
+}
+
+function openAuthModal() {
+  setAuthMode(currentUser ? "login" : authMode);
+  $("#auth-error").textContent = "";
+  $("#join-modal").style.display = "none";
+  $("#auth-modal").classList.add("show");
+  $("#modal-backdrop").classList.add("show");
+}
+
+async function submitAuth(event) {
+  event.preventDefault();
+  const isRegistering = authMode === "register";
+  const body = isRegistering
+    ? { name: $("#auth-name").value.trim(), username: $("#auth-username").value.trim(), email: $("#auth-email").value.trim(), password: $("#auth-password").value }
+    : { email: $("#auth-email").value.trim(), password: $("#auth-password").value };
+  try {
+    currentUser = await apiRequest(isRegistering ? "/auth/register" : "/auth/login", { method: "POST", body: JSON.stringify(body) });
+    updateAuthUi();
+    $("#auth-form").reset();
+    toggleModal(false);
+    loadPeople();
+  } catch (error) {
+    $("#auth-error").textContent = error.message;
+  }
+}
+
+function formatFikaTime(date, startTime) {
+  const fikaDate = new Date(`${date}T${startTime}:00`);
+  const today = new Date();
+  const tomorrow = new Date(today);
+  tomorrow.setDate(today.getDate() + 1);
+  const dateLabel = fikaDate.toDateString() === today.toDateString() ? "Today" : fikaDate.toDateString() === tomorrow.toDateString() ? "Tomorrow" : fikaDate.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" });
+  return `${dateLabel} · ${fikaDate.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`;
+}
+
+function normalizeFika(item) {
+  const type = item.type.toLowerCase();
+  return {
+    id: item.id, title: item.title, host: item.host?.name || "Fika host", initials: (item.host?.name || "F").split(" ").map(part => part[0]).join("").slice(0, 2).toUpperCase(),
+    type, icon: typeIcons[type] || "✦", time: formatFikaTime(item.date, item.startTime), location: item.locationName, distance: "Near you",
+    attendees: item._count?.participants || item.participants?.length || 0, max: item.maxParticipants, tags: item.interests?.map(entry => entry.interest.name) || [],
+    art: typeArt[type] || "peach", description: item.description, status: item.status
+  };
+}
+
+async function loadFikas() {
+  const result = await apiRequest("/fikas?limit=50&page=1");
+  fikas = result.items.map(normalizeFika);
+  renderFikas();
+}
+
+async function loadInterests() {
+  interests = await apiRequest("/interests");
+  $$(".interests-select .chip").forEach(button => {
+    const interest = interests.find(item => item.name.toLowerCase() === button.textContent.trim().toLowerCase());
+    if (interest) button.dataset.interestId = interest.id;
+  });
+}
+
+async function loadPeople() {
+  try {
+    const suggestions = await apiRequest("/matching/suggestions");
+    const people = suggestions.slice(0, 4).map(item => {
+      const name = item.user.name;
+      return [name, name.charAt(0).toUpperCase(), "green", item.sharedInterests.slice(0, 2).join(" · ") || "A new connection", `${item.compatibility}% connection match`];
+    });
+    $(".people-row").innerHTML = people.length ? people.map(([name, initial, shade, interestsText, common]) => `<article class="person-card"><span class="avatar ${shade}">${initial}</span><h3>${name}</h3><p>${interestsText}</p><p class="common-count">✦ ${common}</p></article>`).join("") : "<p>Sign in to see people who match your interests.</p>";
+  } catch (_error) {
+    $(".people-row").innerHTML = "<p>Sign in to see people who match your interests.</p>";
+  }
+}
+
+async function loadStarter() {
+  try {
+    conversationStarter = await apiRequest("/conversation-starters/random");
+    $(".starter-card h3").textContent = conversationStarter.prompt;
+  } catch (_error) {
+    $(".starter-card h3").textContent = "Start with a question and see where the conversation goes.";
+  }
+}
 
 const $ = (selector, scope = document) => scope.querySelector(selector);
 const $$ = (selector, scope = document) => [...scope.querySelectorAll(selector)];
@@ -53,16 +167,6 @@ function renderDiscover() {
   $("#discover-results").textContent = `${matches.length} Fika${matches.length === 1 ? "" : "s"} near you`;
 }
 
-function renderPeople() {
-  const people = [
-    ["David", "D", "purple", "Technology · Gaming", "4 interests in common"],
-    ["Nana", "N", "green", "Books · Photography", "3 interests in common"],
-    ["Laila", "L", "peach", "Food · Travel", "3 interests in common"],
-    ["Tomi", "T", "purple", "Design · Music", "2 interests in common"]
-  ];
-  $(".people-row").innerHTML = people.map(([name, initial, shade, interests, common]) => `<article class="person-card"><span class="avatar ${shade}">${initial}</span><h3>${name}</h3><p>${interests}</p><p class="common-count">✦ ${common}</p></article>`).join("");
-}
-
 function showScreen(screen) {
   $$(".screen").forEach(node => node.classList.toggle("active", node.dataset.screen === screen));
   $$(".nav-item").forEach(node => node.classList.toggle("active", node.dataset.nav === screen));
@@ -90,13 +194,30 @@ function updateDetail(fika) {
 }
 
 function openDetail(id) {
-  const fika = fikas.find(item => item.id === Number(id));
+  const fika = fikas.find(item => String(item.id) === String(id));
   if (!fika) return;
   updateDetail(fika);
   showScreen("detail");
 }
 
+async function joinCurrentFika() {
+  if (!currentFika) return;
+  try {
+    const result = await apiRequest(`/fikas/${currentFika.id}/join`, { method: "POST" });
+    currentFika = normalizeFika(result.fika);
+    await loadFikas();
+    updateDetail(currentFika);
+    toggleModal(true);
+  } catch (error) {
+    alert(error.message);
+  }
+}
+
 function toggleModal(show) {
+  if (!show) {
+    $("#join-modal").style.display = "";
+    $("#auth-modal").classList.remove("show");
+  }
   $("#modal-backdrop").classList.toggle("show", show);
 }
 
@@ -109,6 +230,17 @@ function addChatMessage(message) {
 }
 
 document.addEventListener("click", event => {
+  if (event.target.closest("#auth-button, #auth-action")) {
+    if (currentUser && event.target.closest("#auth-action")) {
+      apiRequest("/auth/logout", { method: "POST" }).then(() => { currentUser = undefined; updateAuthUi(); loadPeople(); showScreen("home"); }).catch(error => alert(error.message));
+    } else if (currentUser && event.target.closest("#auth-button")) {
+      showScreen("profile");
+    } else {
+      openAuthModal();
+    }
+    return;
+  }
+  if (event.target.closest("#auth-switch")) { setAuthMode(authMode === "login" ? "register" : "login"); return; }
   const nav = event.target.closest("[data-nav]");
   if (nav) { showScreen(nav.dataset.nav); return; }
 
@@ -147,31 +279,38 @@ document.addEventListener("click", event => {
   const interest = event.target.closest(".interests-select .chip");
   if (interest) { interest.classList.toggle("selected"); return; }
 
-  if (event.target.closest("#join-button")) { toggleModal(true); return; }
+  if (event.target.closest("#join-button")) { joinCurrentFika(); return; }
   if (event.target.closest(".modal-close")) { toggleModal(false); return; }
   if (event.target.closest("#open-room")) { showScreen("room"); return; }
   if (event.target === $("#modal-backdrop")) { toggleModal(false); }
 });
 
 $("#search-input").addEventListener("input", renderDiscover);
+$("#auth-form").addEventListener("submit", submitAuth);
 
-$("#create-form").addEventListener("submit", event => {
+$("#create-form").addEventListener("submit", async event => {
   event.preventDefault();
   const title = $("#fika-title").value.trim() || "A lovely new Fika";
   const timeValue = $("#fika-time").value || "17:00";
-  const [hours, minutes] = timeValue.split(":");
-  const date = $("#fika-date").value;
-  const time = `${date ? "Soon" : "Today"} · ${Number(hours) % 12 || 12}:${minutes} ${Number(hours) >= 12 ? "PM" : "AM"}`;
-  const typeIcons = { coffee: "☕", food: "🍜", walk: "🚶", chat: "💬", gaming: "🎮", study: "📚" };
-  const selectedTags = $$(".interests-select .chip.selected").map(button => button.textContent.trim());
-  const newFika = { id: Date.now(), title, host: "Amara Mensah", initials: "AM", type: selectedType, icon: typeIcons[selectedType], time, location: $("#fika-location").value.trim() || "Accra", distance: "Near you", attendees: 1, max: Number($("#fika-size").value.match(/\d+/)[0]), tags: selectedTags.length ? selectedTags : ["Conversation"], art: "peach", description: $("#fika-description").value.trim() || "A simple invitation to pause, meet new people and have a good conversation." };
-  fikas.unshift(newFika);
-  renderFikas();
-  updateDetail(newFika);
-  $("#create-form").reset();
-  selectedType = "coffee";
-  $$(".activity-option").forEach(button => button.classList.toggle("selected", button.dataset.type === "coffee"));
-  showScreen("detail");
+  const date = $("#fika-date").value || new Date().toISOString().slice(0, 10);
+  const selectedInterestIds = $$(".interests-select .chip.selected").map(button => button.dataset.interestId).filter(Boolean);
+  try {
+    const created = await apiRequest("/fikas", { method: "POST", body: JSON.stringify({
+      title, description: $("#fika-description").value.trim() || "A simple invitation to pause, meet new people and have a good conversation.",
+      type: selectedType === "chat" ? "CONVERSATION" : selectedType.toUpperCase(), date, startTime: timeValue, duration: 60,
+      locationName: $("#fika-location").value.trim() || "Accra", maxParticipants: Number($("#fika-size").value.match(/\d+/)[0]), interestIds: selectedInterestIds
+    }) });
+    const newFika = normalizeFika(created);
+    fikas.unshift(newFika);
+    renderFikas();
+    updateDetail(newFika);
+    $("#create-form").reset();
+    selectedType = "coffee";
+    $$(".activity-option").forEach(button => button.classList.toggle("selected", button.dataset.type === "coffee"));
+    showScreen("detail");
+  } catch (error) {
+    alert(error.message);
+  }
 });
 
 $(".chat-compose").addEventListener("submit", event => {
@@ -181,17 +320,11 @@ $(".chat-compose").addEventListener("submit", event => {
   input.value = "";
 });
 
-$("#new-starter").addEventListener("click", () => {
-  const prompts = [
-    "What’s a tiny thing that made your week better?",
-    "If you could borrow someone’s expertise for a day, what would it be?",
-    "What place in Accra do you think deserves more love?",
-    "What are you making more room for lately?"
-  ];
-  const heading = $(".starter-card h3");
-  const current = heading.textContent;
-  heading.textContent = prompts.find(prompt => prompt !== current) || prompts[0];
-});
+$("#new-starter").addEventListener("click", loadStarter);
 
 renderFikas();
-renderPeople();
+loadFikas().catch(error => { $(".discover-list").innerHTML = `<p>Unable to load Fikas: ${error.message}</p>`; });
+loadInterests().catch(() => {});
+loadSession();
+loadPeople();
+loadStarter();

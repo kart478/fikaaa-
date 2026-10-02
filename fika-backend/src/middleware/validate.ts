@@ -4,10 +4,10 @@ import { ApiError } from '../utils/api-error.js';
 
 export const validate = (schema: ZodType): RequestHandler => (request, _response, next) => {
   try {
-    const parsed = schema.parse({ body: request.body, params: request.params, query: request.query });
+    const parsed = schema.parse({ body: request.body ?? {}, params: request.params, query: request.query });
     request.body = parsed.body;
     request.params = parsed.params;
-    request.query = parsed.query;
+    Object.defineProperty(request, 'query', { configurable: true, enumerable: true, writable: true, value: parsed.query });
     next();
   } catch (error) {
     if (error instanceof ZodError) {
